@@ -47,12 +47,12 @@ def main():
     for branch in branches:
         # Calculate total sales
         filtered_df = df[df['Sucursal'] == branch]
-        total_branch = filtered_df['Subtotal Bruto'].sum()
+        total_branch = filtered_df['Subtotal Neto'].sum()
         markdown_string += f"* **Ventas Totales {branch}:** ${total_branch:,.0f}\n"
 
         # Calculate total sales per month for the branch
         filtered_df = df[df['Sucursal'] == branch]
-        monthly_sales = filtered_df.resample('M', on='Fecha Documento')['Subtotal Bruto'].sum()
+        monthly_sales = filtered_df.resample('M', on='Fecha Documento')['Subtotal Neto'].sum()
         monthly_sales.name = branch  # Name the series after the branch
         monthly_sales.index = monthly_sales.index.strftime('%Y-%m')
         all_branches_monthly_sales = pd.concat([all_branches_monthly_sales, monthly_sales], axis=1).sort_index()
@@ -63,7 +63,7 @@ def main():
                 (df['Sucursal'] == branch) &
                 (df['Producto / Servicio'] == product)
             ]
-            total_product = filtered_df['Subtotal Bruto'].sum()
+            total_product = filtered_df['Subtotal Neto'].sum()
             markdown_string += f"    * **Ventas Totales {product} en {branch}:** ${total_product:,.0f}\n"
             for customer in customers:
                 filtered_df = df[
@@ -71,7 +71,7 @@ def main():
                     (df['Producto / Servicio'] == product) &
                     (df['Cliente'] == customer)
                 ]
-                total_customer = filtered_df['Subtotal Bruto'].sum()
+                total_customer = filtered_df['Subtotal Neto'].sum()
                 markdown_string += f"        * **Ventas Totales {customer} en {product} en {branch}:** ${total_customer:,.0f}\n"
 
     # Display the markdown string
@@ -94,14 +94,16 @@ def main():
     # Charts
     if not filtered_df.empty and products:
         st.write("### Gráficas:")
-        chart_data = filtered_df.groupby(['Fecha Documento', 'Producto / Servicio'])['Subtotal Bruto'].sum().reset_index()
+        chart_data = filtered_df.groupby(['Fecha Documento', 'Producto / Servicio'])['Subtotal Neto'].sum().reset_index()
+        # chart_data = filtered_df.groupby(['Fecha Documento', 'Producto / Servicio'])['Subtotal Neto'].sum().reset_index()
+
 
         chart = (
             alt.Chart(chart_data)
             .mark_line(point=True)  # Connect the dots with lines
             .encode(
                 x=alt.X('Fecha Documento:T', title='Fecha Documento'), # %B for full month name
-                y=alt.Y('Subtotal Bruto:Q', title='Subtotal Bruto'), # No need to format here
+                y=alt.Y('Subtotal Neto:Q', title='Subtotal Neto'), # No need to format here
                 color='Producto / Servicio:N',
                 # tooltip=['Fecha Documento:T', '(Subtotal Bruto):Q']
             )
@@ -116,7 +118,7 @@ def main():
 
         # new way
         # First, ensure your DataFrame includes 'Sucursal' in the groupby operation.
-        chart_data = filtered_df.groupby(['Fecha Documento', 'Sucursal', 'Producto / Servicio'])['Subtotal Bruto'].sum().reset_index()
+        chart_data = filtered_df.groupby(['Fecha Documento', 'Sucursal', 'Producto / Servicio'])['Subtotal Neto'].sum().reset_index()
 
         # Add a new column to 'chart_data' that concatenates 'Sucursal' and 'Producto / Servicio'
         chart_data['Branch_Product'] = chart_data['Sucursal'] + ' - ' + chart_data['Producto / Servicio']
@@ -127,9 +129,9 @@ def main():
             .mark_line(point=True)  # Use line marks for the chart
             .encode(
                 x=alt.X('Fecha Documento:T', title='Fecha Documento'),
-                y=alt.Y('Subtotal Bruto:Q', title='Subtotal Bruto'),
+                y=alt.Y('Subtotal Neto:Q', title='Subtotal Neto'),
                 color=alt.Color('Branch_Product:N', legend=alt.Legend(title="Sucursal y Producto/Servicio")),  # Now using 'Branch_Product' for color
-                tooltip=['Fecha Documento:T', 'Sucursal:N', 'Producto / Servicio:N', 'Subtotal Bruto:Q']
+                tooltip=['Fecha Documento:T', 'Sucursal:N', 'Producto / Servicio:N', 'Subtotal Neto:Q']
             )
             .properties(
                 width=700,
