@@ -36,7 +36,7 @@ def main():
         st.error("Por favor seleccione almenos una Sucursal.")
         st.stop()
 
-     # Initialize the markdown string
+    # Initialize the markdown string
     markdown_string = ""
 
     st.write("### Ventas para los filtros aplicados:")
@@ -126,7 +126,7 @@ def main():
         # Update your Altair chart to use 'Branch_Product' for color encoding
         chart = (
             alt.Chart(chart_data)
-            .mark_line(point=True)  # Use line marks for the chart
+            .mark_bar(point=True)  # Use line marks for the chart
             .encode(
                 x=alt.X('Fecha Documento:T', title='Fecha Documento'),
                 y=alt.Y('Subtotal Neto:Q', title='Subtotal Neto'),
@@ -142,10 +142,172 @@ def main():
 
         st.altair_chart(chart, use_container_width=True)
         # st.write(chart_data)
+
+    # NEW JUST PRODUCT
+    # New bar chart for quantities per month of a selected product
+    st.write("### Cantidad de Producto Vendida por Mes:")
+    selected_product = st.selectbox("Seleccione un Producto", df['Producto / Servicio'].unique())
+    # Filter the data
+    product_data = df[
+    (df['Sucursal'].isin(branches)) &
+    (df['Cliente'].isin(customers) if customers else True) &
+    (df['Producto / Servicio'] == selected_product if selected_product else True)
+    ]
+
+    # if selected_product:
+    #     # Amount sold per month
+    #     product_monthly_sold = product_data.resample('ME', on='Fecha Documento')['Subtotal Neto'].sum().reset_index()
+    #     sales_chart = (
+    #         alt.Chart(product_monthly_sold)
+    #         .mark_bar(size=20)
+    #         .encode(
+    #             x=alt.X('Fecha Documento:T', title='Fecha Documento'),# axis=alt.Axis(format='%b')), # %B for full month name
+    #             y=alt.Y('Subtotal Neto:Q', title='Ventas'),
+    #             tooltip=['Subtotal Neto:Q']
+    #         )
+    #         .properties(
+    #             width=700,
+    #             height=400,
+    #             title=f'Ventas de {selected_product}  por mes'
+    #         )
+    #     )
+    #         # Calculate a trend line
+    #     sales_trend_line = (
+    #         alt.Chart(product_monthly_sold)
+    #         .mark_line(color='red')  # Set the color of the trend line
+    #         .encode(
+    #             x='Fecha Documento:T',
+    #             y=alt.Y('Subtotal Neto:Q', title='Subtotal Neto'),
+    #         )
+    #         .transform_window(
+    #             rolling_mean='mean(Subtotal Neto)',
+    #             frame=[-3, 3],  # Compute the rolling mean based on 3 months before and after the current month
+    #         )
+    #         .properties(
+    #             title='Tendencia de Ventas por Mes'
+    #         )
+    #     )
+
+    #     st.altair_chart(sales_chart + sales_trend_line, use_container_width=True)
+
+    #     # Calculate total sold per month
+    #     total_sold = product_monthly_sold['Subtotal Neto'].sum()
+
+
+    #     # Quantity sold per month
+    #     # product_data = filtered_df[filtered_df['Producto / Servicio'] == selected_product]
+    #     product_monthly_quantities = product_data.resample('ME', on='Fecha Documento')['Cantidad'].sum().reset_index()
+
+    #     bar_chart = (
+    #         alt.Chart(product_monthly_quantities)
+    #         .mark_bar(size=20)
+    #         .encode(
+    #             x=alt.X('Fecha Documento:T', title='Fecha Documento'),# axis=alt.Axis(format='%b')), # %B for full month name
+    #             y=alt.Y('Cantidad:Q', title='Cantidad'),
+    #             tooltip=['Cantidad:Q']
+    #         )
+    #         .properties(
+    #             width=700,
+    #             height=400,
+    #             title=f'Cantidad de {selected_product} vendida por mes'
+    #         )
+    #     )
+    #         # Calculate a trend line
+    #     trend_line = (
+    #         alt.Chart(product_monthly_quantities)
+    #         .mark_line(color='red')  # Set the color of the trend line
+    #         .encode(
+    #             x='Fecha Documento:T',
+    #             y=alt.Y('Cantidad:Q', title='Cantidad'),
+    #         )
+    #         .transform_window(
+    #             rolling_mean='mean(Cantidad)',
+    #             frame=[-3, 3],  # Compute the rolling mean based on 3 months before and after the current month
+    #         )
+    #         .properties(
+    #             title='Tendencia de Cantidad Vendida por Mes'
+    #         )
+    #     )
+
+    #     # Join the product_monthly_sold and product_monthly_quantities tables
+    #     merged_df = pd.merge(product_monthly_sold, product_monthly_quantities, on='Fecha Documento', how='inner')
+
+    #     st.altair_chart(bar_chart + trend_line, use_container_width=True)
+
+    #     # Calculate total quantity sold per month
+    #     total_quantity_sold = merged_df['Cantidad'].sum()
+    #     st.write(f"##### Cantidad Total Vendida periodo: {total_quantity_sold}")
+    #     st.write(f"##### Ventas Totales periodo: {total_sold}")
+
+    #     # Display table with quantity sold per month
+    #     st.write("##### Monto y Cantidad de Producto Vendida por Mes:")
+    #     # Change the date format to month name
+    #     merged_df['Fecha Documento'] = merged_df['Fecha Documento'].dt.strftime('%B')
+    #     st.write(merged_df)
+
+
+    if selected_product:
+        # Amount and quantity sold per month
+        product_monthly_data = product_data.resample('M', on='Fecha Documento').agg({'Subtotal Neto':'sum', 'Cantidad':'sum'}).reset_index()
+
+        # Plot sales
+        sales_chart = (
+            alt.Chart(product_monthly_data)
+            .mark_bar(size=20)
+            .encode(
+                x=alt.X('Fecha Documento:T', title='Fecha Documento'),
+                y=alt.Y('Subtotal Neto:Q', title='Ventas'),
+                tooltip=['Subtotal Neto:Q']
+            )
+            .properties(
+                width=700,
+                height=400,
+                title=f'Ventas de {selected_product} por mes'
+            )
+        )
+
+        # Plot quantity sold
+        quantity_chart = (
+            alt.Chart(product_monthly_data)
+            .mark_bar(size=20)
+            .encode(
+                x=alt.X('Fecha Documento:T', title='Fecha Documento'),
+                y=alt.Y('Cantidad:Q', title='Cantidad'),
+                tooltip=['Cantidad:Q']
+            )
+            .properties(
+                width=700,
+                height=400,
+                title=f'Cantidad de {selected_product} vendida por mes'
+            )
+        )
+
+        # Calculate trend lines for sales and quantity sold
+        sales_trend_line = sales_chart.mark_line(color='red').encode(
+            y=alt.Y('mean(Subtotal Neto):Q', title='Ventas')
+        )
+        quantity_trend_line = quantity_chart.mark_line(color='red').encode(
+            y=alt.Y('mean(Cantidad):Q', title='Cantidad')
+        )
+
+        st.altair_chart(sales_chart + sales_trend_line, use_container_width=True)
+        st.altair_chart(quantity_chart + quantity_trend_line, use_container_width=True)
+
+        # Calculate total sold per month
+        total_sold = product_monthly_data['Subtotal Neto'].sum()
+        total_quantity_sold = product_monthly_data['Cantidad'].sum()
+        st.write(f"#### Cantidad Total Vendida periodo: {total_quantity_sold:,}")
+        st.write(f"#### Ventas Totales periodo: {total_sold:,}")
+
+        # Display table with sales and quantity sold per month
+        st.write("#### Monto y Cantidad de Producto Vendida por Mes:")
+        product_monthly_data['Fecha Documento'] = product_monthly_data['Fecha Documento'].dt.strftime('%B')
+        st.write(product_monthly_data)
+
+    # No borrar
     st.write("### Data de ventas para los filtros aplicados:")
     st.write(filtered_df)
     st.download_button('Descargar CSV', filtered_df.to_csv(), 'sales_data.csv', 'text/csv')
-
 
 
 
