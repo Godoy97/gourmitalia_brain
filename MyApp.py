@@ -310,6 +310,41 @@ def main():
     st.download_button('Descargar CSV', filtered_df.to_csv(), 'sales_data.csv', 'text/csv')
 
 
+    # Clients
+    st.write("### Clientes")
+
+    # Select monthly or yearly rank for clients
+    rank_period = st.radio("Seleccione el periodo para el ranking de clientes", ('Mensual', 'Anual'))
+
+    if rank_period == 'Mensual':
+        # Monthly rank
+        selected_month_name = st.selectbox("Seleccione el mes", calendar.month_name[1:], index=0)
+        selected_year = st.selectbox("Seleccione el año", df['Fecha Documento'].dt.year.unique(), index=0)
+
+        selected_month_number = list(calendar.month_name).index(selected_month_name)
+
+        monthly_rank = df[(df['Fecha Documento'].dt.month == selected_month_number) & (df['Fecha Documento'].dt.year == selected_year)].groupby('Cliente')['Subtotal Neto'].sum().sort_values(ascending=False).reset_index()
+
+        st.write(f"### Top 10 Compradores en {selected_month_name} {selected_year}:")
+        if not monthly_rank.empty:
+            st.write(monthly_rank.head(10))
+        else:
+            st.write("No hay datos disponibles para el mes y año seleccionados.")
+
+    else:
+        # Yearly rank
+        selected_year = st.selectbox("Seleccione el año", df['Fecha Documento'].dt.year.unique(), index=0)
+
+        yearly_rank = df[df['Fecha Documento'].dt.year == selected_year].groupby([df['Fecha Documento'].dt.year, 'Cliente'])['Subtotal Neto'].sum().reset_index()
+        yearly_rank.columns = ['Año', 'Cliente', 'Compras']
+
+        st.write(f"### Top 10 Compradores Anuales en {selected_year}:")
+        if not yearly_rank.empty:
+            top_buyers_yearly = yearly_rank.groupby('Año').apply(lambda x: x.nlargest(10, 'Compras')).reset_index(drop=True)
+            st.write(top_buyers_yearly)
+        else:
+            st.write("No hay datos disponibles para el año seleccionado.")
+
 
 
 
